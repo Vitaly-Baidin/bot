@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/Vitaly-Baidin/bot/internal/app/commands"
 	"github.com/Vitaly-Baidin/bot/internal/service/product"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
@@ -26,44 +27,18 @@ func main() {
 
 	productService := product.NewService()
 
+	commander := commands.NewCommander(bot, productService)
+
 	for update := range updates {
 		if update.Message != nil { // If we got a message
 			switch update.Message.Command() {
 			case "help":
-				helpCommand(bot, update.Message)
+				commander.Help(update.Message)
 			case "list":
-				listCommand(bot, update.Message, productService)
+				commander.List(update.Message)
 			default:
-				defaultBehavior(bot, update.Message)
+				commander.Default(update.Message)
 			}
 		}
 	}
-}
-
-func helpCommand(bot *tgbotapi.BotAPI, input *tgbotapi.Message) {
-	msg := tgbotapi.NewMessage(input.Chat.ID,
-		"/help - help\n"+
-			"/list - list product",
-	)
-
-	bot.Send(msg)
-}
-
-func listCommand(bot *tgbotapi.BotAPI, input *tgbotapi.Message, productService *product.Service) {
-	products := productService.List()
-	var result string
-
-	for _, p := range products {
-		result += p.Title + "\n"
-	}
-
-	msg := tgbotapi.NewMessage(input.Chat.ID, result)
-
-	bot.Send(msg)
-}
-
-func defaultBehavior(bot *tgbotapi.BotAPI, input *tgbotapi.Message) {
-	log.Printf("[%s] %s", input.From.UserName, input.Text)
-	msg := tgbotapi.NewMessage(input.Chat.ID, "You wrote: "+input.Text)
-	bot.Send(msg)
 }
